@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <osc.hpp>
+
 int main() {
-  printf("Hello world!\n");
+  printf("%s\n", greeter().c_str());
 }
