@@ -4,5 +4,5 @@
 #include <notes.hpp>
 
 int main() {
-  printf("%s\n", greeter().c_str());
+  printf("Hello world!\n");
 }
