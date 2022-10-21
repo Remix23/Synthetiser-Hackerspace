@@ -2,8 +2,8 @@
 
 #include <math.h>
 
-class WaveGenerator
+class SampleGenerator
 {
-
+    
 
 };
