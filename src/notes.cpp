@@ -15,5 +15,5 @@ double NotesCalculator::GetFreqOfNote (int n)
 
 int NotesCalculator::GetSemitonesFromNoteName (std::string noteName)
 {
-
+    return 1;
 }

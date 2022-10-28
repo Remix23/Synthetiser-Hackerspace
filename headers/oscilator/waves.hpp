@@ -1,4 +1,5 @@
 #pragma once
+#include <config.hpp>
 
 enum WaveNames 
 {
@@ -12,9 +13,7 @@ float sinTable [WAVATABLELENGHT] = {
 1.0f
 };
 
-float cosTable [WAVATABLELENGHT] = {
-1.0f
-};
+float cosTable [WAVATABLELENGHT];
 
 float sawTable [WAVATABLELENGHT] = {
 1.0f
@@ -24,9 +23,9 @@ float squareTable [WAVATABLELENGHT] = {
 1.0f
 };
 
-float waveTables [][WAVATABLELENGHT] = {
+float* waveTables [4] = {
     sinTable,
     cosTable, 
     sawTable, 
-    squareTable
+    squareTable,
 };
