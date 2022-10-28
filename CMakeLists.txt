@@ -4,8 +4,12 @@ project(synth)
 
 add_executable(synth
   src/main.cpp
-  src/osc.cpp
   src/notes.cpp
+  src/engine.cpp
+  src/adsr.cpp
+  src/channel.cpp
+  src/waveTablegen.cpp
+  src/baseFilter.cpp
 )
 
 target_include_directories(synth PUBLIC 

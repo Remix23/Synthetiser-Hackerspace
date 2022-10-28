@@ -5,3 +5,4 @@
 
 #define MAXTRACKS 16
 #define BUFFSIZE 128
+#define WAVATABLELENGHT 512

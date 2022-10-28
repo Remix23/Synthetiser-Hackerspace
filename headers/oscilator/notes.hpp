@@ -39,16 +39,3 @@ private:
 
     std::string baseNoteName; 
 };
-
-class Channel 
-{
-public:
-
-    std::string noteName;
-    float freq;
-    int semitonesFromB; 
-
-    bool active = false;
-
-    WaveNames wavenName;
-};

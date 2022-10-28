@@ -8,23 +8,23 @@ enum WaveNames
     Square
 };
 
-const float sinTable [128] = {
+float sinTable [WAVATABLELENGHT] = {
 1.0f
 };
 
-const float cosTable [128] = {
+float cosTable [WAVATABLELENGHT] = {
 1.0f
 };
 
-const float sawTable [128] = {
+float sawTable [WAVATABLELENGHT] = {
 1.0f
 };
 
-const float squareTable [128] = {
+float squareTable [WAVATABLELENGHT] = {
 1.0f
 };
 
-const float waveTables [4][] = {
+float waveTables [][WAVATABLELENGHT] = {
     sinTable,
     cosTable, 
     sawTable, 
