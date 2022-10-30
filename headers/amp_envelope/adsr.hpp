@@ -19,5 +19,5 @@ public:
 
     ADSR ();
 
-    void computeForChannel (ADSRParams *params);
+    void computeForChannel (ADSRParams &params);
 };

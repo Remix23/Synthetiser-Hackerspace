@@ -9,7 +9,7 @@
 
 class Engine
 {
-public: 
+private: 
 
     Channel channels [MAXTRACKS];
 
@@ -21,7 +21,7 @@ public:
 
 public:
 
-    Engine ();
+    Engine (bool debug);
 
     ~Engine ();
 

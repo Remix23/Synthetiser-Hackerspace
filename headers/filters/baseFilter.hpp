@@ -11,7 +11,7 @@ public:
     BaseFilter();
 
     virtual void calcParams (double td);
-    virtual void process (double buff[]); 
+    virtual double process (double sample); 
 
     bool isActive ();
 

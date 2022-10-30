@@ -10,6 +10,7 @@ add_executable(synth
   src/channel.cpp
   src/waveTableOscilator.cpp
   src/baseFilter.cpp
+  src/functions.cpp
 )
 
 target_include_directories(synth PUBLIC 

@@ -12,11 +12,8 @@ double WaveTableOscilator::getSample (OscilatorParams &params)
 
     if (params.phase >= WAVETABLELENGHT) params.phase -= WAVETABLELENGHT;
 
-    // double x1 = table[(int *) params.phase];
+    double y1 = table[(int)params.phase];
+    double y2= table[(int)params.phase + 1];
 
-    // return Interpolator::linearInterpolation();
-    return 1;
+    return Interpolator::linearInterpolation(params.phase, std::floor(params.phase), y1, std::ceil(params.phase), y2);
 };
-
-
-

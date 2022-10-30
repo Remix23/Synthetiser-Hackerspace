@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-Engine::Engine() 
+Engine::Engine(bool debug) 
 {
 
     ADSR adsr = ADSR();
@@ -15,7 +15,7 @@ Engine::Engine()
     for (int i = 0; i < MAXTRACKS; i++)
     {
         channels[i] = Channel();
-        std::cout << "created " << i << "th channel" << std::endl;
+        if (debug) std::cout << "created " << i << "th channel" << std::endl;
     }
 
     filters = std::vector<BaseFilter>();
@@ -50,7 +50,11 @@ void Engine::calcStates()
 {
     for (auto &ch : channels)
     {
-        adsr.computeForChannel(ch.getASDRps());
+        adsr.computeForChannel(*ch.getASDRps());
+    }
+    for (auto &f : filters)
+    {
+        f.calcParams(1 / SAMPLERATE);
     }
 };
 
@@ -59,7 +63,16 @@ double Engine::process()
     double sample = 0;
     for (auto &ch : channels)
     {
-        osc.getSample(*ch.getOscParams());
+        if (!ch.isActive()) continue;
+
+        double s = osc.getSample(*ch.getOscParams());
+        // s *= ch.getASDRps()->envelope;
+        sample += s;
+    }
+    sample /= MAXTRACKS;
+    for (auto &f : filters)
+    {
+        sample = f.process(sample);
     }
     return sample;
 };
