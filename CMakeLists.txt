@@ -8,7 +8,7 @@ add_executable(synth
   src/engine.cpp
   src/adsr.cpp
   src/channel.cpp
-  src/waveTablegen.cpp
+  src/waveTableOscilator.cpp
   src/baseFilter.cpp
 )
 

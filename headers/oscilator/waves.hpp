@@ -1,7 +1,7 @@
 #pragma once
 #include <config.hpp>
 
-enum WaveNames 
+enum WaveName
 {
     Sin, 
     Cos, 
@@ -10,7 +10,7 @@ enum WaveNames
     Triangle
 };
 
-double sinTable [WAVATABLELENGHT] = {
+static double sinTable [WAVETABLELENGHT] = {
     0.0,
     0.012271538285719925,
     0.024541228522912288,
@@ -525,7 +525,7 @@ double sinTable [WAVATABLELENGHT] = {
     -0.012271538285720572
 };
 
-double cosTable [WAVATABLELENGHT] = {
+static double cosTable [WAVETABLELENGHT] = {
     1.0,
     0.9999247018391445,
     0.9996988186962042,
@@ -1040,7 +1040,7 @@ double cosTable [WAVATABLELENGHT] = {
     0.9999247018391445
 };
 
-double sawTable [WAVATABLELENGHT] = {
+static double sawTable [WAVETABLELENGHT] = {
     1.0,
     0.99609375,
     0.9921875,
@@ -1555,7 +1555,7 @@ double sawTable [WAVATABLELENGHT] = {
     -0.99609375
 };
 
-double squareTable [WAVATABLELENGHT] = {
+static double squareTable [WAVETABLELENGHT] = {
     1,
     1,
     1,
@@ -2070,7 +2070,7 @@ double squareTable [WAVATABLELENGHT] = {
     -1
 };
 
-double triangleTable [WAVATABLELENGHT] = {
+static double triangleTable [WAVETABLELENGHT] = {
     -1.0,
     -0.9921875,
     -0.984375,
@@ -2585,7 +2585,7 @@ double triangleTable [WAVATABLELENGHT] = {
     -0.9921875
 };
 
-double* waveTables [] = {
+static double* waveTables [] = {
     sinTable,
     cosTable, 
     sawTable, 

@@ -4,29 +4,45 @@
 #include <channel.hpp>
 #include <config.hpp>
 #include <baseFilter.hpp>
+#include <waveTableOscilator.hpp>
+#include <vector>
 
 class Engine
 {
-private: 
+public: 
 
-    Channel* channels [MAXTRACKS];
+    Channel channels [MAXTRACKS];
 
     ADSR adsr;
 
-    BaseFilter filters[];
+    WaveTableOscilator osc;
+
+    std::vector <BaseFilter> filters;
 
 public:
 
     Engine ();
 
-    double process ();
+    ~Engine ();
 
-    bool setTrack (Channel *channel, int n);
+    void printChannels ();
+
+    // track management
+
+    bool setTrack (double freq, int n);
 
     void activateTrack (int n);
 
     void deativateTrack (int n);
 
+    // sound proccesing
+
     void calcStates ();
+
+    double process ();
+
+    void keyPressed (int key);
+
+    // filters
 
 };

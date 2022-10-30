@@ -4,30 +4,45 @@
 #include <waves.hpp>
 #include <notes.hpp>
 #include <adsr.hpp>
+#include <waveTableOscilator.hpp>
 
 class Channel 
 {
 private:
 
     std::string noteName;
-    float freq;
     int semitonesFromB; 
 
-    bool active = false;
+    bool active;
 
-    WaveNames wavenName;
+    int key; 
+    bool isKeyPressed;
+
+    WaveName wavenName;
 
     ADSRParams adsrps;
+
+    OscilatorParams oscps;
 
 public: 
 
     Channel ();
 
-    ~Channel();
-
     void activate ();
     void deactivate ();
 
+    bool isActive ();
+
+    void keyPressed ();
+    void keyReleased ();
+
+    bool getKeyState ();
+
+    void setFreq (double freq);
+    double getFreq ();
+
     ADSRParams* getASDRps ();
+
+    OscilatorParams* getOscParams ();
 
 };

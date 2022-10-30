@@ -4,6 +4,15 @@
 #include <notes.hpp>
 #include <engine.hpp>
 
+#include <iostream>
+
+using namespace std;
+
 int main() {
-  printf("Hello world!\n");
+
+  Engine eng;
+
+  eng.printChannels();
+
+  return 0;
 }
