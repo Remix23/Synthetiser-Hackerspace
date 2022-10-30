@@ -3,7 +3,7 @@
 #include <waveTableOscilator.hpp>
 #include <config.hpp>
 
-Channel::Channel ()
+Channel::Channel (bool debug)
 {
     active = false;
     isKeyPressed = false;
@@ -19,7 +19,11 @@ Channel::Channel ()
     oscps.phase = 0;
     oscps.step = 0;
     oscps.waveName = Sin;
+
+    this->debug = debug;
 }
+
+Channel::Channel(){}
 
 void Channel::activate ()
 {
@@ -64,6 +68,12 @@ void Channel::setFreq (double freq)
 double Channel::getFreq()
 {
     return oscps.freq;
+}
+
+void Channel::changeWave(WaveName new_name)
+{
+    oscps.waveName = new_name;
+    oscps.phase = 0;
 }
 
 OscilatorParams* Channel::getOscParams ()

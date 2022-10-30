@@ -9,7 +9,8 @@ add_executable(synth
   src/adsr.cpp
   src/channel.cpp
   src/waveTableOscilator.cpp
-  src/baseFilter.cpp
+  src/baseEffect.cpp
+  src/customEffectsAndFilters.cpp
   src/functions.cpp
 )
 

@@ -10,6 +10,8 @@ class Channel
 {
 private:
 
+    bool debug = false;
+
     std::string noteName;
     int semitonesFromB; 
 
@@ -18,15 +20,14 @@ private:
     int key; 
     bool isKeyPressed;
 
-    WaveName wavenName;
-
     ADSRParams adsrps;
 
     OscilatorParams oscps;
 
 public: 
 
-    Channel ();
+    Channel();
+    Channel (bool debug);
 
     void activate ();
     void deactivate ();
@@ -40,6 +41,8 @@ public:
 
     void setFreq (double freq);
     double getFreq ();
+
+    void changeWave (WaveName new_name);
 
     ADSRParams* getASDRps ();
 

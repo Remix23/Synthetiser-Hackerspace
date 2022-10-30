@@ -3,7 +3,7 @@
 #include <adsr.hpp>
 #include <channel.hpp>
 #include <config.hpp>
-#include <baseFilter.hpp>
+#include <baseEffect.hpp>
 #include <waveTableOscilator.hpp>
 #include <vector>
 
@@ -11,16 +11,22 @@ class Engine
 {
 private: 
 
+    bool debug = true;
+
     Channel channels [MAXTRACKS];
 
     ADSR adsr;
 
     WaveTableOscilator osc;
 
-    std::vector <BaseFilter> filters;
+    std::vector <BaseEffect> effects;
+    std::vector <BaseEffect> filters;
+
+    bool _isValidN (int n);
 
 public:
 
+    Engine();
     Engine (bool debug);
 
     ~Engine ();
@@ -29,11 +35,13 @@ public:
 
     // track management
 
-    bool setTrack (double freq, int n);
+    bool setTrack (int n, double freq);
 
-    void activateTrack (int n);
+    bool activateTrack (int n);
 
-    void deativateTrack (int n);
+    bool deativateTrack (int n);
+
+    bool changeWave (int n, WaveName new_name);
 
     // sound proccesing
 
@@ -43,6 +51,11 @@ public:
 
     void keyPressed (int key);
 
-    // filters
+    // filters and effects menagemennt
 
+    void activateFilter ();
+    void deativateFilter ();
+
+    void activateEffect();
+    void deactivateEffect();
 };
