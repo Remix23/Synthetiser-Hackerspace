@@ -26,7 +26,7 @@ int main() {
   eng.setTrack(440, 0);
   eng.activateTrack(0);
 
-  for (int k = 0; k < 5; k++)
+  while (1)
   {
     for (int i = 0; i < BUFFSIZE; i++)
     {
