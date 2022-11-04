@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(synth)
+set(PICO_SDK_FETCH_FROM_GIT on)
+
+include(pico_sdk_import.cmake)
+
+project(synth C CXX ASM)
+
+pico_sdk_init()
 
 add_executable(synth
   src/main.cpp
@@ -22,3 +28,9 @@ target_include_directories(synth PUBLIC
   headers/oscilator
 )
 
+target_link_libraries(synth pico_stdlib)
+
+pico_enable_stdio_usb(synth 1)
+pico_enable_stdio_uart(synth 0)
+
+pico_add_extra_outputs(synth)
