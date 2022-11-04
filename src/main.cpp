@@ -6,16 +6,14 @@
 
 #include <iostream>
 
-using namespace std;
-
 void printBuff (double buff[MAXTRACKS])
 {
-  cout << "[ ";
+  std::cout << "[ ";
   for (int i = 0; i < MAXTRACKS; i++)
   {
-    cout << buff[i] << ", ";
+    std::cout << buff[i] << ", ";
   }
-  cout << "]\n";
+  std::cout << "]\n";
 }
 
 int main() {
