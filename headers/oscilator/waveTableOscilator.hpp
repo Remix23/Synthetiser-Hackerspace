@@ -2,12 +2,12 @@
 
 #include <waves.hpp>
 
-struct OscilatorParams 
+struct OscilatorParams
 {
-    double phase;
-    double step;
+    float phase;
+    float step;
 
-    double freq;
+    float freq;
 
     WaveName waveName;
 };
@@ -16,7 +16,5 @@ class WaveTableOscilator
 {
 
 public:
-    
-    double getSample (OscilatorParams &params);
-    
+    float getSample(OscilatorParams &params);
 };

@@ -22,20 +22,19 @@ enum Notes
 class NotesCalculator
 {
 public:
+    NotesCalculator(int numOfSemitonsofBase, float baseFreq);
+    ~NotesCalculator();
 
-    NotesCalculator (int numOfSemitonsofBase, double baseFreq);
-    ~NotesCalculator ();
+    float GetFreqOfNote(int n); // n - the numbers of semitones from the base note
 
-    double GetFreqOfNote (int n); // n - the numbers of semitones from the base note
+    int GetNumersOfSemitonesForNote();
 
-    int GetNumersOfSemitonesForNote ();
-
-    std::string GetNoteNameFromSemitones (int numOfSemitonesFromStart); // the starting note is C0 
-    int GetSemitonesFromNoteName (std::string noteName);
+    std::string GetNoteNameFromSemitones(int numOfSemitonesFromStart); // the starting note is C0
+    int GetSemitonesFromNoteName(std::string noteName);
 
 private:
-    double baseFreq; // in Hz
+    float baseFreq; // in Hz
     int semitonesFromStart;
 
-    std::string baseNoteName; 
+    std::string baseNoteName;
 };

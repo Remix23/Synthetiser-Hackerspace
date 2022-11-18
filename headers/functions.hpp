@@ -1,9 +1,9 @@
 #include <math.h>
 
-class Interpolator 
+class Interpolator
 {
-public: 
-    static double linearInterpolation (double x, double x1, double y1, double x2, double y2);
+public:
+    static float linearInterpolation(float x, float x1, float y1, float x2, float y2);
 
-    static double cubicSplineInterpolation ();
+    static float cubicSplineInterpolation();
 };

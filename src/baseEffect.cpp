@@ -18,14 +18,14 @@ BaseEffect::BaseEffect(bool active, bool debug)
     this->debug = debug;
 }
 
-BaseEffect::~BaseEffect (){}
+BaseEffect::~BaseEffect() {}
 
-void BaseEffect::activate ()
+void BaseEffect::activate()
 {
     active = true;
 }
 
-void BaseEffect::deactivate ()
+void BaseEffect::deactivate()
 {
     active = false;
 }
@@ -35,5 +35,5 @@ bool BaseEffect::isActive()
     return active;
 }
 
-void BaseEffect::calcParams(double td){} 
-double BaseEffect::process(double sample) { return sample; }
+void BaseEffect::calcParams(float td) {}
+float BaseEffect::process(float sample) { return sample; }

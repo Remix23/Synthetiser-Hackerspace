@@ -9,52 +9,50 @@
 
 class Engine
 {
-private: 
-
+private:
     bool debug = true;
 
-    Channel channels [MAXTRACKS];
+    Channel channels[MAXTRACKS];
 
     ADSR adsr;
 
     WaveTableOscilator osc;
 
-    std::vector <BaseEffect> effects;
-    std::vector <BaseEffect> filters;
+    std::vector<BaseEffect> effects;
+    std::vector<BaseEffect> filters;
 
-    bool _isValidN (int n);
+    bool _isValidN(int n);
 
 public:
-
     Engine();
-    Engine (bool debug);
+    Engine(bool debug);
 
-    ~Engine ();
+    ~Engine();
 
-    void printChannels ();
+    void printChannels();
 
     // track management
 
-    bool setTrack (int n, double freq);
+    bool setTrack(int n, float freq);
 
-    bool activateTrack (int n);
+    bool activateTrack(int n);
 
-    bool deativateTrack (int n);
+    bool deativateTrack(int n);
 
-    bool changeWave (int n, WaveName new_name);
+    bool changeWave(int n, WaveName new_name);
 
     // sound proccesing
 
-    void calcStates ();
+    void calcStates();
 
-    double process ();
+    float process();
 
-    void keyPressed (int key);
+    void keyPressed(int key);
 
     // filters and effects menagemennt
 
-    void activateFilter ();
-    void deativateFilter ();
+    void activateFilter();
+    void deativateFilter();
 
     void activateEffect();
     void deactivateEffect();

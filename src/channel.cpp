@@ -58,14 +58,14 @@ bool Channel::getKeyState()
     return isKeyPressed;
 }
 
-void Channel::setFreq (double freq)
+void Channel::setFreq (float freq)
 {
     oscps.freq = freq;
     oscps.step = WAVETABLELENGHT * freq / SAMPLERATE;
     oscps.phase = 0;
 }
 
-double Channel::getFreq()
+float Channel::getFreq()
 {
     return oscps.freq;
 }

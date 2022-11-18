@@ -1,27 +1,27 @@
 #include <baseEffect.hpp>
 #include <customEffectsAndFilters.hpp>
 
-Delay::Delay (double a, double b, double c, bool active):BaseEffect(active)
-{ 
+Delay::Delay(float a, float b, float c, bool active) : BaseEffect(active)
+{
     this->a = a;
     this->b = b;
     this->c = c;
 }
-Delay::Delay (double a, double b, double c, bool active, bool debug):BaseEffect(active, debug)
-{ 
+Delay::Delay(float a, float b, float c, bool active, bool debug) : BaseEffect(active, debug)
+{
     this->a = a;
     this->b = b;
     this->c = c;
 }
 
-void Delay::calcParams(double td)
+void Delay::calcParams(float td)
 {
     a = 2 * b;
     b = c * c;
     c++;
 }
 
-double Delay::process(double sample)
+float Delay::process(float sample)
 {
     return sample / a * b / c;
 }

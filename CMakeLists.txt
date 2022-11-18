@@ -28,7 +28,11 @@ target_include_directories(synth PUBLIC
   headers/oscilator
 )
 
-target_link_libraries(synth pico_stdlib)
+target_link_libraries(synth 
+  pico_stdlib 
+  hardware_pwm
+  pico_multicore
+)
 
 pico_enable_stdio_usb(synth 1)
 pico_enable_stdio_uart(synth 0)

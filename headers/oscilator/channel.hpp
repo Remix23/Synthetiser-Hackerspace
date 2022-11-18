@@ -6,46 +6,43 @@
 #include <adsr.hpp>
 #include <waveTableOscilator.hpp>
 
-class Channel 
+class Channel
 {
 private:
-
     bool debug = false;
 
     std::string noteName;
-    int semitonesFromB; 
+    int semitonesFromB;
 
     bool active;
 
-    int key; 
+    int key;
     bool isKeyPressed;
 
     ADSRParams adsrps;
 
     OscilatorParams oscps;
 
-public: 
-
+public:
     Channel();
-    Channel (bool debug);
+    Channel(bool debug);
 
-    void activate ();
-    void deactivate ();
+    void activate();
+    void deactivate();
 
-    bool isActive ();
+    bool isActive();
 
-    void keyPressed ();
-    void keyReleased ();
+    void keyPressed();
+    void keyReleased();
 
-    bool getKeyState ();
+    bool getKeyState();
 
-    void setFreq (double freq);
-    double getFreq ();
+    void setFreq(float freq);
+    float getFreq();
 
-    void changeWave (WaveName new_name);
+    void changeWave(WaveName new_name);
 
-    ADSRParams* getASDRps ();
+    ADSRParams *getASDRps();
 
-    OscilatorParams* getOscParams ();
-
+    OscilatorParams *getOscParams();
 };

@@ -7,7 +7,7 @@
 #include <baseEffect.hpp>
 #include <customEffectsAndFilters.hpp>
 
-Engine::Engine(bool debug) 
+Engine::Engine(bool debug)
 {
 
     this->debug = debug;
@@ -19,7 +19,8 @@ Engine::Engine(bool debug)
     for (int i = 0; i < MAXTRACKS; i++)
     {
         channels[i] = Channel(debug);
-        if (debug) std::cout << "created " << i << "th channel" << std::endl;
+        if (debug)
+            std::cout << "created " << i << "th channel" << std::endl;
     }
 
     effects = std::vector<BaseEffect>();
@@ -28,49 +29,53 @@ Engine::Engine(bool debug)
     filters.push_back(Delay(1.0, 2.0, 3.0, true, debug));
 
     // adding filters and effects
-
 };
 
-Engine::Engine (){}
+Engine::Engine() {}
 
-Engine::~Engine ()
+Engine::~Engine()
 {
-    if (debug) std::cout << "engine removal" << std::endl;
+    if (debug)
+        std::cout << "engine removal" << std::endl;
 }
 
-bool Engine::_isValidN (int n)
+bool Engine::_isValidN(int n)
 {
     return 0 <= n < MAXTRACKS;
 }
 
-bool Engine::setTrack (int n, double freq)
+bool Engine::setTrack(int n, float freq)
 {
-    if (!_isValidN(n)) return false;
+    if (!_isValidN(n))
+        return false;
 
     channels[n].setFreq(freq);
 
     return true;
 };
 
-bool Engine::activateTrack (int n)
+bool Engine::activateTrack(int n)
 {
-    if (!_isValidN(n)) return false;
+    if (!_isValidN(n))
+        return false;
 
     channels[n].activate();
     return true;
 };
 
-bool Engine::deativateTrack (int n)
+bool Engine::deativateTrack(int n)
 {
-    if (!_isValidN(n)) return false;
+    if (!_isValidN(n))
+        return false;
 
-    channels[n].activate();
+    channels[n].deactivate();
     return true;
 };
 
-bool Engine::changeWave (int n, WaveName new_name)
+bool Engine::changeWave(int n, WaveName new_name)
 {
-    if (!_isValidN(n)) return false;
+    if (!_isValidN(n))
+        return false;
 
     channels[n].changeWave(new_name);
     return true;
@@ -92,25 +97,28 @@ void Engine::calcStates()
     }
 };
 
-double Engine::process()
+float Engine::process()
 {
-    double sample = 0;
+    float sample = 0;
     for (auto &ch : channels)
     {
-        if (!ch.isActive()) continue;
+        if (!ch.isActive())
+            continue;
 
-        double s = osc.getSample(*ch.getOscParams());
-        s *= ch.getASDRps()->envelope;
+        float s = osc.getSample(*ch.getOscParams());
+        // s *= ch.getASDRps()->envelope;
         sample += s;
     }
     sample /= MAXTRACKS;
     for (auto &e : effects)
     {
-        if (e.isActive()) e.process(sample);
+        if (e.isActive())
+            e.process(sample);
     }
     for (auto &f : filters)
     {
-        if (f.isActive()) sample = f.process(sample);
+        if (f.isActive())
+            sample = f.process(sample);
     }
     return sample;
 };

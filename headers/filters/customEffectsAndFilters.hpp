@@ -9,14 +9,12 @@
 class Delay : public BaseEffect
 {
 private:
-
-double a, b, c;
+    float a, b, c;
 
 public:
+    Delay(float a, float b, float c, bool active);
+    Delay(float a, float b, float c, bool active, bool debug);
 
-    Delay(double a, double b, double c, bool active);
-    Delay (double a, double b, double c, bool active, bool debug);
-
-    void calcParams (double td);
-    double process (double sample);
+    void calcParams(float td);
+    float process(float sample);
 };

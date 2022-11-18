@@ -1,23 +1,22 @@
 #pragma once
 
-struct ADSRParams 
+struct ADSRParams
 {
     char state = 0;
-    
-    double attackRate;
-    double decayRate;
-    double realeaseRate;
-    double sustainLevel;
 
-    double envelope = 0;
+    float attackRate;
+    float decayRate;
+    float realeaseRate;
+    float sustainLevel;
+
+    float envelope = 0;
 };
 
-class ADSR 
+class ADSR
 {
 
 public:
+    ADSR();
 
-    ADSR ();
-
-    void computeForChannel (ADSRParams &params);
+    void computeForChannel(ADSRParams &params);
 };

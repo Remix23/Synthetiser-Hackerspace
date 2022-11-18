@@ -1,11 +1,11 @@
 #include <functions.hpp>
 
-double Interpolator::linearInterpolation (double x, double x1, double y1, double x2, double y2)
+float Interpolator::linearInterpolation(float x, float x1, float y1, float x2, float y2)
 {
     return y1 + (y1 - y2) / (x1 - x2) * (x - x1);
 }
 
-double Interpolator::cubicSplineInterpolation()
+float Interpolator::cubicSplineInterpolation()
 {
     return 0.0;
 }

@@ -3,14 +3,14 @@
 
 enum WaveName
 {
-    Sin, 
-    Cos, 
-    Saw, 
+    Sin,
+    Cos,
+    Saw,
     Square,
     Triangle
 };
 
-static double sinTable [WAVETABLELENGHT] = {
+static float sinTable[WAVETABLELENGHT] = {
     0.0,
     0.012271538285719925,
     0.024541228522912288,
@@ -522,10 +522,9 @@ static double sinTable [WAVETABLELENGHT] = {
     -0.04906767432741809,
     -0.036807222941359394,
     -0.024541228522912448,
-    -0.012271538285720572
-};
+    -0.012271538285720572};
 
-static double cosTable [WAVETABLELENGHT] = {
+static float cosTable[WAVETABLELENGHT] = {
     1.0,
     0.9999247018391445,
     0.9996988186962042,
@@ -1037,10 +1036,9 @@ static double cosTable [WAVETABLELENGHT] = {
     0.9987954562051724,
     0.9993223845883494,
     0.9996988186962042,
-    0.9999247018391445
-};
+    0.9999247018391445};
 
-static double sawTable [WAVETABLELENGHT] = {
+static float sawTable[WAVETABLELENGHT] = {
     1.0,
     0.99609375,
     0.9921875,
@@ -1552,10 +1550,9 @@ static double sawTable [WAVETABLELENGHT] = {
     -0.984375,
     -0.98828125,
     -0.9921875,
-    -0.99609375
-};
+    -0.99609375};
 
-static double squareTable [WAVETABLELENGHT] = {
+static float squareTable[WAVETABLELENGHT] = {
     1,
     1,
     1,
@@ -2067,10 +2064,9 @@ static double squareTable [WAVETABLELENGHT] = {
     -1,
     -1,
     -1,
-    -1
-};
+    -1};
 
-static double triangleTable [WAVETABLELENGHT] = {
+static float triangleTable[WAVETABLELENGHT] = {
     -1.0,
     -0.9921875,
     -0.984375,
@@ -2582,13 +2578,11 @@ static double triangleTable [WAVETABLELENGHT] = {
     -0.96875,
     -0.9765625,
     -0.984375,
-    -0.9921875
-};
+    -0.9921875};
 
-static double* waveTables [] = {
+static float *waveTables[] = {
     sinTable,
-    cosTable, 
-    sawTable, 
+    cosTable,
+    sawTable,
     squareTable,
-    triangleTable
-};
+    triangleTable};
