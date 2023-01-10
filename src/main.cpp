@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <math.h>
+
 #include <config.hpp>
 #include <notes.hpp>
 #include <engine.hpp>
@@ -9,34 +11,53 @@
 // Pico SDK includes
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
+#include <pico/time.h>
 #include <hardware/irq.h>
 #include <hardware/pwm.h>
 #include <hardware/sync.h>
+#include <hardware/dma.h>
 
 // TinyUSB
 #include <bsp/board.h>
 #include <tusb.h>
 
+#define EMPTY_NOTE -128
+#define NOTE_NOT_FOUND -1
+
 #define AUDIO_PIN 13
+
 long position = 0;
 bool buffSel = 0;
-float buff[2][BUFFSIZE];
+uint16_t buff[2][BUFFSIZE];
 
-void pwm_interrupt_handler()
+static int pwm_dma_chan;
+
+// void pwm_interrupt_handler()
+// {
+//   pwm_clear_irq(pwm_gpio_to_slice_num(AUDIO_PIN));
+//   if (position < ((BUFFSIZE << 3) - 1))
+//   {
+//     uint8_t sample = (uint8_t)((1.0f + buff[buffSel][position >> 3]) * (100.0f / 2.0f));
+//     pwm_set_gpio_level(AUDIO_PIN, sample);
+//     position++;
+//   }
+//   else
+//   {
+//     position = 0;
+//     buffSel = !buffSel;
+//     multicore_fifo_push_blocking(!buffSel);
+//   }
+// }
+
+void dma_handler()
 {
-  pwm_clear_irq(pwm_gpio_to_slice_num(AUDIO_PIN));
-  if (position < ((BUFFSIZE << 3) - 1))
-  {
-    uint8_t sample = (uint8_t)((1.0f + buff[buffSel][position >> 3]) * (100.0f / 2.0f));
-    pwm_set_gpio_level(AUDIO_PIN, sample);
-    position++;
-  }
-  else
-  {
-    position = 0;
-    buffSel = !buffSel;
-    multicore_fifo_push_blocking(!buffSel);
-  }
+  irq_clear(DMA_IRQ_0);
+  // dma_hw->ints0 = 1u << pwm_dma_chan;
+
+  dma_channel_set_read_addr(pwm_dma_chan, &buff[buffSel], true);
+
+  buffSel = !buffSel;
+  // multicore_fifo_push_blocking(!buffSel);
 }
 
 void printBuff(float buff[MAXTRACKS])
@@ -56,7 +77,7 @@ int find_note_in_notes(int8_t note, int8_t notes[MAXTRACKS])
     if (note == notes[i])
       return i;
   }
-  return -1;
+  return NOTE_NOT_FOUND;
 }
 
 void handle_midi(int8_t notes[MAXTRACKS], uint8_t *buffer, size_t buffer_size)
@@ -65,18 +86,30 @@ void handle_midi(int8_t notes[MAXTRACKS], uint8_t *buffer, size_t buffer_size)
 
   while (packet_start < buffer_size)
   {
-    switch (buffer[packet_start])
+    switch (buffer[packet_start++])
     {
     case MIDI_CIN_NOTE_ON:
-      if (!find_note_in_notes(buffer[packet_start] & 0x7F, notes))
+    {
+      int empty = find_note_in_notes(EMPTY_NOTE, notes);
+      int note = buffer[packet_start++] & 0x7F;
+      if (find_note_in_notes(note, notes) == NOTE_NOT_FOUND && empty != NOTE_NOT_FOUND)
       {
-        size_t empty;
+        notes[empty] = note;
       }
+      packet_start++;
       break;
+    }
 
     case MIDI_CIN_NOTE_OFF:
-      /* code */
+    {
+      int note_num = find_note_in_notes(buffer[packet_start++] & 0x7F, notes);
+      if (note_num != NOTE_NOT_FOUND)
+      {
+        notes[note_num] = EMPTY_NOTE;
+      }
+      packet_start++;
       break;
+    }
 
     default:
       break;
@@ -84,26 +117,59 @@ void handle_midi(int8_t notes[MAXTRACKS], uint8_t *buffer, size_t buffer_size)
   }
 }
 
+float note_to_freq(int note)
+{
+  float a = 440; // frequency of A (coomon value is 440Hz)
+  return (a / 32) * pow(2, ((note - 9) / 12.0));
+}
+
+void init_pwm()
+{
+  gpio_set_function(AUDIO_PIN, GPIO_FUNC_PWM);
+
+  int audio_pin_slice = pwm_gpio_to_slice_num(AUDIO_PIN);
+
+  pwm_set_wrap(audio_pin_slice, PWM_WRAP);
+
+  pwm_set_gpio_level(AUDIO_PIN, 0);
+  pwm_set_enabled(audio_pin_slice, true);
+
+  pwm_dma_chan = dma_claim_unused_channel(true);
+
+  dma_channel_config dma_conf = dma_channel_get_default_config(pwm_dma_chan);
+  channel_config_set_transfer_data_size(&dma_conf, DMA_SIZE_16);
+  channel_config_set_read_increment(&dma_conf, true);
+  channel_config_set_write_increment(&dma_conf, false);
+  channel_config_set_dreq(&dma_conf, pwm_get_dreq(audio_pin_slice));
+
+  dma_channel_configure(
+      pwm_dma_chan,
+      &dma_conf,
+      &pwm_hw->slice[audio_pin_slice].cc,
+      NULL,
+      BUFFSIZE,
+      false);
+
+  dma_channel_set_irq0_enabled(pwm_dma_chan, true);
+
+  irq_set_exclusive_handler(DMA_IRQ_0, dma_handler);
+  irq_set_enabled(DMA_IRQ_0, true);
+
+  dma_handler();
+}
+
 // This core handles the audio generation.
 void core1_entry()
 {
   stdio_init_all();
-
-  gpio_init(15);
-  gpio_set_dir(15, GPIO_OUT);
+  init_pwm();
 
   // Synth stuff
   Engine eng(false);
 
-  eng.setTrack(0, 1);
-  eng.activateTrack(0);
+  int8_t notes[MAXTRACKS] = {EMPTY_NOTE};
 
-  eng.setTrack(1, 2);
-  eng.activateTrack(1);
-
-  int8_t notes[MAXTRACKS] = {INT8_MIN};
-
-  bool select = 1; // Initial value doesn't matter
+  bool prevBuffSel = buffSel; // Initial value doesn't matter
   while (1)
   {
     /*
@@ -115,19 +181,33 @@ void core1_entry()
       uint8_t *buffer = (uint8_t *)malloc(midi_msg_size);
       if (!buffer)
         panic("Failed to allocate buffer!");
-      tud_midi_read((void *)buffer, midi_msg_size);
+      tud_midi_stream_read((void *)buffer, midi_msg_size);
 
+      // Handle MIDI messages
       handle_midi(notes, buffer, midi_msg_size);
 
       free(buffer);
+
+      for (int note = 0; note < MAXTRACKS; note++)
+      {
+        if (notes[note] != EMPTY_NOTE)
+        {
+          eng.setTrack(note, note_to_freq(notes[note]));
+          eng.activateTrack(note);
+        }
+        else
+        {
+          eng.deativateTrack(note);
+        }
+      }
     }
 
-    if (multicore_fifo_rvalid())
+    if (buffSel != prevBuffSel)
     {
-      select = multicore_fifo_pop_blocking();
+      prevBuffSel = buffSel;
       for (int i = 0; i < BUFFSIZE; i++)
       {
-        buff[select][i] = eng.process();
+        buff[!buffSel][i] = (uint8_t)((1.0f + eng.process()) * (100.0f / 2.0f));
       }
     }
   }
@@ -136,32 +216,16 @@ void core1_entry()
 // This core handles the hardware audio output.
 int main()
 {
-  multicore_launch_core1(core1_entry);
-
-  // Initializing pico for audio out
-  set_sys_clock_khz(176000, true);
-  gpio_set_function(AUDIO_PIN, GPIO_FUNC_PWM);
-
-  int audio_pin_slice = pwm_gpio_to_slice_num(AUDIO_PIN);
-
-  pwm_clear_irq(audio_pin_slice);
-  pwm_set_irq_enabled(audio_pin_slice, true);
-  irq_set_exclusive_handler(PWM_IRQ_WRAP, pwm_interrupt_handler);
-  irq_set_enabled(PWM_IRQ_WRAP, true);
-
-  pwm_config config = pwm_get_default_config();
-
-  pwm_config_set_clkdiv(&config, 8.0f);
-  pwm_config_set_wrap(&config, 250);
-  pwm_init(audio_pin_slice, &config, true);
-
-  pwm_set_gpio_level(AUDIO_PIN, 0);
-
   board_init();
   tusb_init();
 
+  multicore_launch_core1(core1_entry);
+
   while (1)
+  {
     tud_task(); // Handle TinyUSB device task
+    tight_loop_contents();
+  }
 
   return 0;
 }

@@ -23,6 +23,7 @@ add_executable(synth
   src/baseEffect.cpp
   src/customEffectsAndFilters.cpp
   src/functions.cpp
+  src/usb_descriptors.c
 )
 
 target_include_directories(synth PUBLIC 
@@ -36,6 +37,7 @@ target_include_directories(synth PUBLIC
 target_link_libraries(synth 
   pico_stdlib 
   hardware_pwm
+  hardware_dma
   pico_multicore
   tinyusb_device
   tinyusb_board
