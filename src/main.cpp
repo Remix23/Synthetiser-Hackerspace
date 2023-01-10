@@ -13,6 +13,10 @@
 #include <hardware/pwm.h>
 #include <hardware/sync.h>
 
+// TinyUSB
+#include <bsp/board.h>
+#include <tusb.h>
+
 #define AUDIO_PIN 13
 long position = 0;
 bool buffSel = 0;
@@ -45,6 +49,42 @@ void printBuff(float buff[MAXTRACKS])
   std::cout << "]\n";
 }
 
+int find_note_in_notes(int8_t note, int8_t notes[MAXTRACKS])
+{
+  for (int i = 0; i < MAXTRACKS; i++)
+  {
+    if (note == notes[i])
+      return i;
+  }
+  return -1;
+}
+
+void handle_midi(int8_t notes[MAXTRACKS], uint8_t *buffer, size_t buffer_size)
+{
+  size_t packet_start = 0;
+
+  while (packet_start < buffer_size)
+  {
+    switch (buffer[packet_start])
+    {
+    case MIDI_CIN_NOTE_ON:
+      if (!find_note_in_notes(buffer[packet_start] & 0x7F, notes))
+      {
+        size_t empty;
+      }
+      break;
+
+    case MIDI_CIN_NOTE_OFF:
+      /* code */
+      break;
+
+    default:
+      break;
+    }
+  }
+}
+
+// This core handles the audio generation.
 void core1_entry()
 {
   stdio_init_all();
@@ -61,20 +101,39 @@ void core1_entry()
   eng.setTrack(1, 2);
   eng.activateTrack(1);
 
-  bool select = 1;
+  int8_t notes[MAXTRACKS] = {INT8_MIN};
+
+  bool select = 1; // Initial value doesn't matter
   while (1)
   {
-    for (int i = 0; i < BUFFSIZE; i++)
+    /*
+      This check below needs to happen because malloc(0) is undefined and *MAY NOT RETURN NULL*. Why（ ﾟДﾟ）?
+    */
+    size_t midi_msg_size = (size_t)tud_midi_available();
+    if (midi_msg_size)
     {
-      buff[select][i] = eng.process();
-      // buff[1 - buffSel][i] = (((float)(i) / BUFFSIZE) * 2.0f) - 1.0f;
+      uint8_t *buffer = (uint8_t *)malloc(midi_msg_size);
+      if (!buffer)
+        panic("Failed to allocate buffer!");
+      tud_midi_read((void *)buffer, midi_msg_size);
+
+      handle_midi(notes, buffer, midi_msg_size);
+
+      free(buffer);
     }
 
-    select = multicore_fifo_pop_blocking();
-    gpio_put(15, select);
+    if (multicore_fifo_rvalid())
+    {
+      select = multicore_fifo_pop_blocking();
+      for (int i = 0; i < BUFFSIZE; i++)
+      {
+        buff[select][i] = eng.process();
+      }
+    }
   }
 }
 
+// This core handles the hardware audio output.
 int main()
 {
   multicore_launch_core1(core1_entry);
@@ -98,8 +157,28 @@ int main()
 
   pwm_set_gpio_level(AUDIO_PIN, 0);
 
+  board_init();
+  tusb_init();
+
   while (1)
-    __wfi();
+    tud_task(); // Handle TinyUSB device task
 
   return 0;
+}
+
+void tud_mount_cb(void)
+{
+}
+
+void tud_umount_cb(void)
+{
+}
+
+void tud_suspend_cb(bool remote_wake_en)
+{
+  (void)remote_wake_en;
+}
+
+void tud_resume_cb(void)
+{
 }

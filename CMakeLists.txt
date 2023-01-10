@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
+execute_process(
+  COMMAND git submodule update --init
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/pico-sdk/
+)
+
 set(PICO_SDK_FETCH_FROM_GIT on)
 
 include(pico-sdk/pico_sdk_init.cmake)
@@ -32,9 +37,11 @@ target_link_libraries(synth
   pico_stdlib 
   hardware_pwm
   pico_multicore
+  tinyusb_device
+  tinyusb_board
 )
 
-pico_enable_stdio_usb(synth 1)
-pico_enable_stdio_uart(synth 0)
+pico_enable_stdio_usb(synth 0)
+pico_enable_stdio_uart(synth 1)
 
 pico_add_extra_outputs(synth)
