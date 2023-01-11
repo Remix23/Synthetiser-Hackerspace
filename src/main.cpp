@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include <math.h>
+#include <cmath>
 
 #include <config.hpp>
 #include <notes.hpp>
@@ -28,36 +28,22 @@
 
 long position = 0;
 bool buffSel = 0;
+bool newBuffer = true;
+
 uint16_t buff[2][BUFFSIZE];
 
 static int pwm_dma_chan;
 
-// void pwm_interrupt_handler()
-// {
-//   pwm_clear_irq(pwm_gpio_to_slice_num(AUDIO_PIN));
-//   if (position < ((BUFFSIZE << 3) - 1))
-//   {
-//     uint8_t sample = (uint8_t)((1.0f + buff[buffSel][position >> 3]) * (100.0f / 2.0f));
-//     pwm_set_gpio_level(AUDIO_PIN, sample);
-//     position++;
-//   }
-//   else
-//   {
-//     position = 0;
-//     buffSel = !buffSel;
-//     multicore_fifo_push_blocking(!buffSel);
-//   }
-// }
+Engine eng(false);
 
 void dma_handler()
 {
-  irq_clear(DMA_IRQ_0);
-  // dma_hw->ints0 = 1u << pwm_dma_chan;
+  dma_hw->ints0 = 1u << pwm_dma_chan;
 
   dma_channel_set_read_addr(pwm_dma_chan, &buff[buffSel], true);
 
   buffSel = !buffSel;
-  // multicore_fifo_push_blocking(!buffSel);
+  newBuffer = true;
 }
 
 void printBuff(float buff[MAXTRACKS])
@@ -80,47 +66,330 @@ int find_note_in_notes(int8_t note, int8_t notes[MAXTRACKS])
   return NOTE_NOT_FOUND;
 }
 
-void handle_midi(int8_t notes[MAXTRACKS], uint8_t *buffer, size_t buffer_size)
+float note_to_freq(int note)
 {
-  size_t packet_start = 0;
+  float a = 440; // frequency of A (coomon value is 440Hz)
+  return (a / 32) * pow(2, ((note - 9) / 12.0));
+}
 
-  while (packet_start < buffer_size)
+inline unsigned char reverse_byte(unsigned char x)
+{
+  static const unsigned char table[] = {
+      0x00,
+      0x80,
+      0x40,
+      0xc0,
+      0x20,
+      0xa0,
+      0x60,
+      0xe0,
+      0x10,
+      0x90,
+      0x50,
+      0xd0,
+      0x30,
+      0xb0,
+      0x70,
+      0xf0,
+      0x08,
+      0x88,
+      0x48,
+      0xc8,
+      0x28,
+      0xa8,
+      0x68,
+      0xe8,
+      0x18,
+      0x98,
+      0x58,
+      0xd8,
+      0x38,
+      0xb8,
+      0x78,
+      0xf8,
+      0x04,
+      0x84,
+      0x44,
+      0xc4,
+      0x24,
+      0xa4,
+      0x64,
+      0xe4,
+      0x14,
+      0x94,
+      0x54,
+      0xd4,
+      0x34,
+      0xb4,
+      0x74,
+      0xf4,
+      0x0c,
+      0x8c,
+      0x4c,
+      0xcc,
+      0x2c,
+      0xac,
+      0x6c,
+      0xec,
+      0x1c,
+      0x9c,
+      0x5c,
+      0xdc,
+      0x3c,
+      0xbc,
+      0x7c,
+      0xfc,
+      0x02,
+      0x82,
+      0x42,
+      0xc2,
+      0x22,
+      0xa2,
+      0x62,
+      0xe2,
+      0x12,
+      0x92,
+      0x52,
+      0xd2,
+      0x32,
+      0xb2,
+      0x72,
+      0xf2,
+      0x0a,
+      0x8a,
+      0x4a,
+      0xca,
+      0x2a,
+      0xaa,
+      0x6a,
+      0xea,
+      0x1a,
+      0x9a,
+      0x5a,
+      0xda,
+      0x3a,
+      0xba,
+      0x7a,
+      0xfa,
+      0x06,
+      0x86,
+      0x46,
+      0xc6,
+      0x26,
+      0xa6,
+      0x66,
+      0xe6,
+      0x16,
+      0x96,
+      0x56,
+      0xd6,
+      0x36,
+      0xb6,
+      0x76,
+      0xf6,
+      0x0e,
+      0x8e,
+      0x4e,
+      0xce,
+      0x2e,
+      0xae,
+      0x6e,
+      0xee,
+      0x1e,
+      0x9e,
+      0x5e,
+      0xde,
+      0x3e,
+      0xbe,
+      0x7e,
+      0xfe,
+      0x01,
+      0x81,
+      0x41,
+      0xc1,
+      0x21,
+      0xa1,
+      0x61,
+      0xe1,
+      0x11,
+      0x91,
+      0x51,
+      0xd1,
+      0x31,
+      0xb1,
+      0x71,
+      0xf1,
+      0x09,
+      0x89,
+      0x49,
+      0xc9,
+      0x29,
+      0xa9,
+      0x69,
+      0xe9,
+      0x19,
+      0x99,
+      0x59,
+      0xd9,
+      0x39,
+      0xb9,
+      0x79,
+      0xf9,
+      0x05,
+      0x85,
+      0x45,
+      0xc5,
+      0x25,
+      0xa5,
+      0x65,
+      0xe5,
+      0x15,
+      0x95,
+      0x55,
+      0xd5,
+      0x35,
+      0xb5,
+      0x75,
+      0xf5,
+      0x0d,
+      0x8d,
+      0x4d,
+      0xcd,
+      0x2d,
+      0xad,
+      0x6d,
+      0xed,
+      0x1d,
+      0x9d,
+      0x5d,
+      0xdd,
+      0x3d,
+      0xbd,
+      0x7d,
+      0xfd,
+      0x03,
+      0x83,
+      0x43,
+      0xc3,
+      0x23,
+      0xa3,
+      0x63,
+      0xe3,
+      0x13,
+      0x93,
+      0x53,
+      0xd3,
+      0x33,
+      0xb3,
+      0x73,
+      0xf3,
+      0x0b,
+      0x8b,
+      0x4b,
+      0xcb,
+      0x2b,
+      0xab,
+      0x6b,
+      0xeb,
+      0x1b,
+      0x9b,
+      0x5b,
+      0xdb,
+      0x3b,
+      0xbb,
+      0x7b,
+      0xfb,
+      0x07,
+      0x87,
+      0x47,
+      0xc7,
+      0x27,
+      0xa7,
+      0x67,
+      0xe7,
+      0x17,
+      0x97,
+      0x57,
+      0xd7,
+      0x37,
+      0xb7,
+      0x77,
+      0xf7,
+      0x0f,
+      0x8f,
+      0x4f,
+      0xcf,
+      0x2f,
+      0xaf,
+      0x6f,
+      0xef,
+      0x1f,
+      0x9f,
+      0x5f,
+      0xdf,
+      0x3f,
+      0xbf,
+      0x7f,
+      0xff,
+  };
+  return table[x];
+}
+
+void handle_midi(int8_t notes[MAXTRACKS])
+{
+  uint8_t buffer[4];
+
+  while (tud_midi_packet_read(buffer))
   {
-    switch (buffer[packet_start++])
+    switch (buffer[0] & 0x0f)
     {
     case MIDI_CIN_NOTE_ON:
     {
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
       int empty = find_note_in_notes(EMPTY_NOTE, notes);
-      int note = buffer[packet_start++] & 0x7F;
-      if (find_note_in_notes(note, notes) == NOTE_NOT_FOUND && empty != NOTE_NOT_FOUND)
-      {
-        notes[empty] = note;
-      }
-      packet_start++;
+      int8_t note = buffer[2];
+      // if ((find_note_in_notes(note, notes) == NOTE_NOT_FOUND))
+      // {
+      //   if (empty != NOTE_NOT_FOUND)
+      //   {
+      //     notes[empty] = note;
+      //   }
+      //   else
+      //   {
+      //     notes[0] = note;
+      //   }
+      // }
+      eng.setTrack(0, note_to_freq(note));
+      eng.activateTrack(0);
       break;
     }
 
     case MIDI_CIN_NOTE_OFF:
     {
-      int note_num = find_note_in_notes(buffer[packet_start++] & 0x7F, notes);
-      if (note_num != NOTE_NOT_FOUND)
-      {
-        notes[note_num] = EMPTY_NOTE;
-      }
-      packet_start++;
+      gpio_put(PICO_DEFAULT_LED_PIN, 0);
+      // int note_num = find_note_in_notes(buffer[packet_start++] & 0x7F, notes);
+      // if (note_num != NOTE_NOT_FOUND)
+      // {
+      //   notes[note_num] = EMPTY_NOTE;
+      // }
+      eng.deativateTrack(0);
       break;
     }
+
+      // case MIDI_CIN_SYSEX_END_1BYTE:
+      // case MIDI_CIN_1BYTE_DATA:
+      //   break;
+
+      // case MIDI_CIN_SYSCOM_2BYTE:
+      // case MIDI_CIN_SYSEX_END_2BYTE:
+      // case MIDI_CIN_PROGRAM_CHANGE:
+      // case MIDI_CIN_CHANNEL_PRESSURE:
+      //   break;
 
     default:
       break;
     }
   }
-}
-
-float note_to_freq(int note)
-{
-  float a = 440; // frequency of A (coomon value is 440Hz)
-  return (a / 32) * pow(2, ((note - 9) / 12.0));
 }
 
 void init_pwm()
@@ -158,75 +427,54 @@ void init_pwm()
   dma_handler();
 }
 
-// This core handles the audio generation.
-void core1_entry()
+bool usb_timer_callback(struct repeating_timer *t)
 {
-  stdio_init_all();
-  init_pwm();
-
-  // Synth stuff
-  Engine eng(false);
-
-  int8_t notes[MAXTRACKS] = {EMPTY_NOTE};
-
-  bool prevBuffSel = buffSel; // Initial value doesn't matter
-  while (1)
-  {
-    /*
-      This check below needs to happen because malloc(0) is undefined and *MAY NOT RETURN NULL*. Why（ ﾟДﾟ）?
-    */
-    size_t midi_msg_size = (size_t)tud_midi_available();
-    if (midi_msg_size)
-    {
-      uint8_t *buffer = (uint8_t *)malloc(midi_msg_size);
-      if (!buffer)
-        panic("Failed to allocate buffer!");
-      tud_midi_stream_read((void *)buffer, midi_msg_size);
-
-      // Handle MIDI messages
-      handle_midi(notes, buffer, midi_msg_size);
-
-      free(buffer);
-
-      for (int note = 0; note < MAXTRACKS; note++)
-      {
-        if (notes[note] != EMPTY_NOTE)
-        {
-          eng.setTrack(note, note_to_freq(notes[note]));
-          eng.activateTrack(note);
-        }
-        else
-        {
-          eng.deativateTrack(note);
-        }
-      }
-    }
-
-    if (buffSel != prevBuffSel)
-    {
-      prevBuffSel = buffSel;
-      for (int i = 0; i < BUFFSIZE; i++)
-      {
-        buff[!buffSel][i] = (uint8_t)((1.0f + eng.process()) * (100.0f / 2.0f));
-      }
-    }
-  }
+  tud_task();
+  return true;
 }
 
 // This core handles the hardware audio output.
 int main()
 {
+  stdio_init_all();
+
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+
+  init_pwm();
+
+  struct repeating_timer usb_timer;
+  add_repeating_timer_ms(10, usb_timer_callback, NULL, &usb_timer);
+
   board_init();
   tusb_init();
 
-  multicore_launch_core1(core1_entry);
+  // Synth stuff
+  eng.activateTrack(0);
+
+  int8_t notes[MAXTRACKS] = {EMPTY_NOTE};
 
   while (1)
   {
-    tud_task(); // Handle TinyUSB device task
-    tight_loop_contents();
-  }
+    /*
+      This check below needs to happen because malloc(0) is undefined and *MAY NOT RETURN NULL*. Why（ ﾟДﾟ）?
+    */
 
+    // Handle MIDI messages
+    handle_midi(notes);
+
+    // eng.setTrack(0, 440);
+    // eng.activateTrack(0);
+
+    if (newBuffer)
+    {
+      newBuffer = false;
+      for (int i = 0; i < BUFFSIZE; i++)
+      {
+        buff[buffSel][i] = (1.0f + eng.process()) * ((float)(PWM_WRAP) / 2.0f);
+      }
+    }
+  }
   return 0;
 }
 
