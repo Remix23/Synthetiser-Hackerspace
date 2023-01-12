@@ -67,8 +67,10 @@ void inc_new_note_idx()
 int find_note_in_notes(int8_t note)
 {
   for (int i = 0; i < MAXTRACKS; i++)
+  {
     if (note == notes[i])
       return i;
+  }
 
   return NOTE_NOT_FOUND;
 }
@@ -79,7 +81,7 @@ float note_to_freq(int note)
   return (a / 32) * pow(2, ((note - 9) / 12.0));
 }
 
-void handle_midi(int8_t notes[MAXTRACKS])
+void handle_midi()
 {
   uint8_t buffer[4];
 
@@ -103,12 +105,13 @@ void handle_midi(int8_t notes[MAXTRACKS])
 
     case MIDI_CIN_NOTE_OFF:
     {
-      gpio_put(PICO_DEFAULT_LED_PIN, 0);
+      int8_t note_num = buffer[2];
 
-      int note = find_note_in_notes(buffer[2]);
+      int note = find_note_in_notes(note_num);
 
       if (note != NOTE_NOT_FOUND)
       {
+        gpio_put(PICO_DEFAULT_LED_PIN, 0);
         notes[note] = EMPTY_NOTE;
         eng.deativateTrack(note);
       }
@@ -187,14 +190,14 @@ int main()
   while (1)
   {
     // Handle MIDI messages
-    handle_midi(notes);
+    handle_midi();
 
     if (newBuffer)
     {
       newBuffer = false;
       for (int i = 0; i < BUFFSIZE; i++)
       {
-        buff[buffSel][i] = (1.0f + eng.process()) * ((float)(PWM_WRAP) / 2.0f);
+        buff[buffSel][i] = (1.0f + eng.process()) * (((float)(PWM_WRAP)*0.5f) / 2.0f);
       }
     }
   }
