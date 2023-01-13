@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include <cmath>
+
 #include <config.hpp>
 #include <notes.hpp>
 #include <engine.hpp>
@@ -9,30 +11,41 @@
 // Pico SDK includes
 #include <pico/stdlib.h>
 #include <pico/multicore.h>
+#include <pico/time.h>
 #include <hardware/irq.h>
 #include <hardware/pwm.h>
 #include <hardware/sync.h>
+#include <hardware/dma.h>
+
+// TinyUSB
+#include <bsp/board.h>
+#include <tusb.h>
+
+#define EMPTY_NOTE -128
+#define NOTE_NOT_FOUND -1
 
 #define AUDIO_PIN 13
+
 long position = 0;
 bool buffSel = 0;
-float buff[2][BUFFSIZE];
+bool newBuffer = true;
 
-void pwm_interrupt_handler()
+uint16_t buff[2][BUFFSIZE];
+
+static int pwm_dma_chan;
+
+Engine eng(false);
+int8_t notes[MAXTRACKS] = {-128};
+int new_note_idx = 0;
+
+void dma_handler()
 {
-  pwm_clear_irq(pwm_gpio_to_slice_num(AUDIO_PIN));
-  if (position < ((BUFFSIZE << 3) - 1))
-  {
-    uint8_t sample = (uint8_t)((1.0f + buff[buffSel][position >> 3]) * (100.0f / 2.0f));
-    pwm_set_gpio_level(AUDIO_PIN, sample);
-    position++;
-  }
-  else
-  {
-    position = 0;
-    buffSel = !buffSel;
-    multicore_fifo_push_blocking(!buffSel);
-  }
+  dma_hw->ints0 = 1u << pwm_dma_chan;
+
+  dma_channel_set_read_addr(pwm_dma_chan, &buff[buffSel], true);
+
+  buffSel = !buffSel;
+  newBuffer = true;
 }
 
 void printBuff(float buff[MAXTRACKS])
@@ -45,61 +58,165 @@ void printBuff(float buff[MAXTRACKS])
   std::cout << "]\n";
 }
 
-void core1_entry()
+void inc_new_note_idx()
 {
-  stdio_init_all();
+  new_note_idx++;
+  new_note_idx = new_note_idx < MAXTRACKS ? new_note_idx : 0;
+}
 
-  gpio_init(15);
-  gpio_set_dir(15, GPIO_OUT);
-
-  // Synth stuff
-  Engine eng(false);
-
-  eng.setTrack(0, 1);
-  eng.activateTrack(0);
-
-  eng.setTrack(1, 2);
-  eng.activateTrack(1);
-
-  bool select = 1;
-  while (1)
+int find_note_in_notes(int8_t note)
+{
+  for (int i = 0; i < MAXTRACKS; i++)
   {
-    for (int i = 0; i < BUFFSIZE; i++)
+    if (note == notes[i])
+      return i;
+  }
+
+  return NOTE_NOT_FOUND;
+}
+
+float note_to_freq(int note)
+{
+  float a = 440; // frequency of A (coomon value is 440Hz)
+  return (a / 32) * pow(2, ((note - 9) / 12.0));
+}
+
+void handle_midi()
+{
+  uint8_t buffer[4];
+
+  while (tud_midi_packet_read(buffer))
+  {
+    switch (buffer[0] & 0x0f)
     {
-      buff[select][i] = eng.process();
-      // buff[1 - buffSel][i] = (((float)(i) / BUFFSIZE) * 2.0f) - 1.0f;
+    case MIDI_CIN_NOTE_ON:
+    {
+      gpio_put(PICO_DEFAULT_LED_PIN, 1);
+
+      int8_t note = buffer[2];
+
+      notes[new_note_idx] = note;
+      eng.setTrack(new_note_idx, note_to_freq(note));
+      eng.activateTrack(new_note_idx);
+      inc_new_note_idx();
+
+      break;
     }
 
-    select = multicore_fifo_pop_blocking();
-    gpio_put(15, select);
+    case MIDI_CIN_NOTE_OFF:
+    {
+      int8_t note_num = buffer[2];
+
+      int note = find_note_in_notes(note_num);
+
+      if (note != NOTE_NOT_FOUND)
+      {
+        gpio_put(PICO_DEFAULT_LED_PIN, 0);
+        notes[note] = EMPTY_NOTE;
+        eng.deativateTrack(note);
+      }
+
+      break;
+    }
+
+    default:
+      break;
+    }
   }
 }
 
-int main()
+void init_pwm()
 {
-  multicore_launch_core1(core1_entry);
-
-  // Initializing pico for audio out
-  set_sys_clock_khz(176000, true);
   gpio_set_function(AUDIO_PIN, GPIO_FUNC_PWM);
 
   int audio_pin_slice = pwm_gpio_to_slice_num(AUDIO_PIN);
 
-  pwm_clear_irq(audio_pin_slice);
-  pwm_set_irq_enabled(audio_pin_slice, true);
-  irq_set_exclusive_handler(PWM_IRQ_WRAP, pwm_interrupt_handler);
-  irq_set_enabled(PWM_IRQ_WRAP, true);
-
-  pwm_config config = pwm_get_default_config();
-
-  pwm_config_set_clkdiv(&config, 8.0f);
-  pwm_config_set_wrap(&config, 250);
-  pwm_init(audio_pin_slice, &config, true);
+  pwm_set_wrap(audio_pin_slice, PWM_WRAP);
 
   pwm_set_gpio_level(AUDIO_PIN, 0);
+  pwm_set_enabled(audio_pin_slice, true);
+
+  pwm_dma_chan = dma_claim_unused_channel(true);
+
+  dma_channel_config dma_conf = dma_channel_get_default_config(pwm_dma_chan);
+  channel_config_set_transfer_data_size(&dma_conf, DMA_SIZE_16);
+  channel_config_set_read_increment(&dma_conf, true);
+  channel_config_set_write_increment(&dma_conf, false);
+  channel_config_set_dreq(&dma_conf, pwm_get_dreq(audio_pin_slice));
+
+  dma_channel_configure(
+      pwm_dma_chan,
+      &dma_conf,
+      &pwm_hw->slice[audio_pin_slice].cc,
+      NULL,
+      BUFFSIZE,
+      false);
+
+  dma_channel_set_irq0_enabled(pwm_dma_chan, true);
+
+  irq_set_exclusive_handler(DMA_IRQ_0, dma_handler);
+  irq_set_enabled(DMA_IRQ_0, true);
+
+  dma_handler();
+}
+
+bool usb_timer_callback(struct repeating_timer *t)
+{
+  tud_task();
+  return true;
+}
+
+// This core handles the hardware audio output.
+int main()
+{
+  stdio_init_all();
+
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+
+  init_pwm();
+
+  struct repeating_timer usb_timer;
+  add_repeating_timer_ms(10, usb_timer_callback, NULL, &usb_timer);
+
+  board_init();
+  tusb_init();
+
+  // Synth stuff
+  eng.activateTrack(0);
+
+  int8_t notes[MAXTRACKS] = {EMPTY_NOTE};
 
   while (1)
-    __wfi();
+  {
+    // Handle MIDI messages
+    handle_midi();
 
+    if (newBuffer)
+    {
+      newBuffer = false;
+      for (int i = 0; i < BUFFSIZE; i++)
+      {
+        buff[buffSel][i] = (1.0f + eng.process()) * (((float)(PWM_WRAP)*0.5f) / 2.0f);
+      }
+    }
+  }
   return 0;
+}
+
+void tud_mount_cb(void)
+{
+}
+
+void tud_umount_cb(void)
+{
+}
+
+void tud_suspend_cb(bool remote_wake_en)
+{
+  (void)remote_wake_en;
+}
+
+void tud_resume_cb(void)
+{
 }

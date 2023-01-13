@@ -109,17 +109,17 @@ float Engine::process()
         // s *= ch.getASDRps()->envelope;
         sample += s;
     }
-    sample /= MAXTRACKS;
-    for (auto &e : effects)
-    {
-        if (e.isActive())
-            e.process(sample);
-    }
-    for (auto &f : filters)
-    {
-        if (f.isActive())
-            sample = f.process(sample);
-    }
+    sample /= (float)MAXTRACKS;
+    // for (auto &e : effects)
+    // {
+    //     if (e.isActive())
+    //         e.process(sample);
+    // }
+    // for (auto &f : filters)
+    // {
+    //     if (f.isActive())
+    //         sample = f.process(sample);
+    // }
     return sample;
 };
 
